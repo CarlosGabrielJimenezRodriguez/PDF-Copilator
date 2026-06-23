@@ -280,11 +280,15 @@
     <div id="pdfModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Vista Previa del Documento</h2>
+                <h2>Opciones del Documento</h2>
                 <button class="close-modal" id="closeModalBtn">✖</button>
             </div>
             
-            <iframe id="pdfIframe" class="pdf-viewer"></iframe>
+            <div class="pdf-viewer" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; background: #e0e0e0;">
+                <h3 style="margin-bottom: 10px;">✅ ¡Documento Listo!</h3>
+                <p style="margin-bottom: 20px;">Tu PDF ha sido procesado correctamente. Usa el botón de abajo para visualizarlo con la aplicación de tu teléfono.</p>
+                <button id="openNativeBtn" class="btn btn-secondary" style="width: 80%; padding: 1rem; font-size: 1.1rem;">👀 Abrir para Revisar</button>
+            </div>
             
             <div class="modal-footer">
                 <button id="downloadBtn" class="btn btn-primary">⬇️ Descargar Archivo</button>
@@ -305,7 +309,7 @@
         
         // Elementos del Modal
         const pdfModal = document.getElementById('pdfModal');
-        const pdfIframe = document.getElementById('pdfIframe');
+        const openNativeBtn = document.getElementById('openNativeBtn');
         const closeModalBtn = document.getElementById('closeModalBtn');
         const downloadBtn = document.getElementById('downloadBtn');
         const shareBtn = document.getElementById('shareBtn');
@@ -313,7 +317,7 @@
         let selectedImages = [];
         let currentPdfBlob = null; // Guardará el archivo PDF generado en memoria
 
-        // 1. Manejo de archivos e imágenes (Igual que antes)
+        // 1. Manejo de archivos e imágenes
         fileInput.addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
             files.forEach(file => {
@@ -374,14 +378,10 @@
                     pdf.addImage(optimizedBase64, 'JPEG', 0, 0, pdfWidth, pdfHeight);
                 }
 
-                // En lugar de descargarlo directamente, lo guardamos en memoria (Blob)
+                // Guardamos el PDF generado en memoria
                 currentPdfBlob = pdf.output('blob');
                 
-                // Mostramos el PDF en el iframe
-                const pdfUrl = URL.createObjectURL(currentPdfBlob);
-                pdfIframe.src = pdfUrl;
-                
-                // Abrimos el modal
+                // Abrimos el modal con el botón de "Abrir para Revisar"
                 pdfModal.classList.remove('hidden');
 
             } catch (error) {
@@ -420,17 +420,22 @@
 
         // 3. Controles del Modal de Vista Previa
 
+        // Botón para abrir la vista previa nativa del celular
+        openNativeBtn.addEventListener('click', () => {
+            if (!currentPdfBlob) return;
+            const fileUrl = URL.createObjectURL(currentPdfBlob);
+            window.open(fileUrl, '_blank');
+        });
+
         // Cerrar el Modal
         closeModalBtn.addEventListener('click', () => {
             pdfModal.classList.add('hidden');
-            pdfIframe.src = ''; // Limpiar memoria
         });
 
         // Obtener el nombre del archivo configurado por el usuario
         function getFileName() {
             let name = fileNameInput.value.trim();
             if (name === '') name = 'Reporte_Escaneado';
-            // Validar que termine en .pdf
             return name.endsWith('.pdf') ? name : `${name}.pdf`;
         }
 
@@ -451,7 +456,6 @@
 
             const fileToShare = new File([currentPdfBlob], getFileName(), { type: 'application/pdf' });
 
-            // Verificar si el navegador del celular soporta compartir archivos nativamente
             if (navigator.canShare && navigator.canShare({ files: [fileToShare] })) {
                 try {
                     await navigator.share({
@@ -466,7 +470,8 @@
                 alert('Tu navegador actual no soporta el envío directo de archivos. Por favor, usa el botón de "Descargar" y envíalo manualmente.');
             }
         });
-// --- CONFIGURACIÓN DE PWA Y LECTURA DE ARCHIVOS EXTERNOS ---
+
+        // --- CONFIGURACIÓN DE PWA Y LECTURA DE ARCHIVOS EXTERNOS ---
         
         // 1. Registrar el Service Worker
         if ('serviceWorker' in navigator) {
@@ -485,9 +490,10 @@
                 for (const fileHandle of launchParams.files) {
                     const file = await fileHandle.getFile();
                     if (file.type === 'application/pdf') {
-                        // Usamos tu mismo visor modal para mostrar el PDF recibido
-                        const pdfUrl = URL.createObjectURL(file);
-                        pdfIframe.src = pdfUrl;
+                        // Guardamos el PDF recibido para poder abrirlo o compartirlo
+                        currentPdfBlob = file;
+                        
+                        // Mostramos el menú con las opciones
                         pdfModal.classList.remove('hidden');
                         
                         // Ponemos el nombre del archivo en el cuadro de texto
