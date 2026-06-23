@@ -24,12 +24,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); }
 
-        .header {
-            background-color: var(--primary-color);
-            color: white; padding: 1.5rem; text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
+        .header { background-color: var(--primary-color); color: white; padding: 1.5rem; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
         .control-panel { background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
         
@@ -38,58 +33,52 @@
         .form-group label { display: block; font-weight: bold; margin-bottom: 0.5rem; }
         select, input[type="text"] { width: 100%; padding: 0.8rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
 
-        .action-buttons { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .action-buttons { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
         
-        .btn {
-            flex: 1; padding: 1rem; border: none; border-radius: 4px;
-            font-size: 1rem; font-weight: bold; cursor: pointer;
-            text-align: center; min-width: 150px; color: white;
-        }
+        .btn { flex: 1; padding: 1rem; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; text-align: center; min-width: 150px; color: white; }
         .btn-primary { background-color: var(--accent-color); }
         .btn-secondary { background-color: var(--secondary-color); }
         .btn-action { background-color: var(--action-color); }
         .btn-purple { background-color: #8e44ad; }
 
-        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; margin-top: 1rem; }
-        .image-card { position: relative; border-radius: 6px; overflow: hidden; aspect-ratio: 1; }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        
+        /* Estilos de la tarjeta con numeración y flechas */
+        .image-card { position: relative; border-radius: 6px; overflow: hidden; aspect-ratio: 1; border: 2px solid #ddd; }
         .image-card img { width: 100%; height: 100%; object-fit: cover; }
+        .image-number { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; font-weight: bold; }
         .remove-btn { position: absolute; top: 5px; right: 5px; background: rgba(231, 76, 60, 0.9); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; }
+        .reorder-btns { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; background: rgba(0,0,0,0.5); }
+        .btn-move { background: none; border: none; color: white; padding: 5px; cursor: pointer; font-size: 1.2rem; }
 
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; }
         .hidden { display: none !important; }
         .spinner { border: 5px solid #f3f3f3; border-top: 5px solid var(--accent-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 1rem; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Modal y Visor Integrado */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; flex-direction: column; }
         .modal-header { padding: 1rem; background: var(--primary-color); color: white; display: flex; justify-content: space-between; align-items: center; }
         .close-modal { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
-        
-        .pdf-viewer-container {
-            flex: 1; background: var(--viewer-bg); overflow-y: auto; 
-            display: flex; flex-direction: column; align-items: center; padding: 1rem;
-        }
+        .pdf-viewer-container { flex: 1; background: var(--viewer-bg); overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 1rem; }
         #pdfCanvas { max-width: 100%; background: white; box-shadow: 0 4px 8px rgba(0,0,0,0.3); margin-bottom: 1rem; }
         .page-info { color: white; margin-bottom: 10px; font-weight: bold; }
-
         .modal-footer { padding: 1rem; background: #f1f1f1; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
     </style>
 </head>
 <body>
     <header class="header">
-        <h1>AeroDoc Scanner & Viewer</h1>
-        <p>Herramienta técnica para evidencias y manuales</p>
+        <h1>AeroDoc Scanner</h1>
     </header>
 
     <main class="container">
         <section class="control-panel">
             <div class="row-group">
                 <div class="form-group" style="flex: 100%;">
-                    <label for="fileNameInput">Nombre del Documento:</label>
-                    <input type="text" id="fileNameInput" placeholder="Ej. Tarjeta_Trabajo_Motor" value="Reporte_Escaneado">
+                    <label>Nombre del Documento:</label>
+                    <input type="text" id="fileNameInput" value="Reporte_Escaneado">
                 </div>
                 <div class="form-group">
-                    <label for="formatSelect">Tamaño de Hoja (Para escáner):</label>
+                    <label>Tamaño:</label>
                     <select id="formatSelect">
                         <option value="letter" selected>Carta (Letter)</option>
                         <option value="legal">Oficio (Legal)</option>
@@ -97,85 +86,55 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="qualitySelect">Calidad de Envío:</label>
+                    <label>Calidad:</label>
                     <select id="qualitySelect">
-                        <option value="low">Bajo (Económico)</option>
-                        <option value="medium" selected>Medio (Estándar)</option>
-                        <option value="high">Alto (Nítido)</option>
+                        <option value="low">Bajo</option>
+                        <option value="medium" selected>Medio</option>
+                        <option value="high">Alto</option>
                     </select>
                 </div>
             </div>
 
-            <div class="action-buttons" style="margin-bottom: 1rem;">
+            <div class="action-buttons">
                 <label for="fileInput" class="btn btn-secondary">📷 Escanear Fotos</label>
                 <input type="file" id="fileInput" accept="image/*" multiple hidden>
-                
-                <label for="externalPdfInput" class="btn btn-purple">📂 Abrir Documento PDF</label>
+                <label for="externalPdfInput" class="btn btn-purple">📂 Abrir PDF</label>
                 <input type="file" id="externalPdfInput" accept="application/pdf" hidden>
             </div>
-
-            <div class="action-buttons">
-                <button id="previewBtn" class="btn btn-primary" disabled>📄 Generar y Ver PDF</button>
-            </div>
+            <button id="previewBtn" class="btn btn-primary" disabled style="width:100%">📄 Generar y Ver PDF</button>
         </section>
 
         <section class="preview-section">
-            <h3>Evidencias Fotográficas (<span id="imageCount">0</span>)</h3>
+            <h3>Evidencias (<span id="imageCount">0</span>)</h3>
             <div id="previewGallery" class="gallery"></div>
         </section>
     </main>
 
-    <div id="loadingOverlay" class="overlay hidden">
-        <div class="spinner"></div>
-        <p>Procesando documento...</p>
-    </div>
+    <div id="loadingOverlay" class="overlay hidden"><div class="spinner"></div><p>Procesando...</p></div>
 
     <div id="pdfModal" class="modal hidden">
         <div class="modal-header">
             <h2 id="modalTitle">Vista Previa</h2>
             <button class="close-modal" id="closeModalBtn">✖</button>
         </div>
-        
         <div class="pdf-viewer-container">
-            <div class="page-info" id="pageInfoText">Cargando documento...</div>
+            <div class="page-info" id="pageInfoText">Documento listo</div>
             <canvas id="pdfCanvas"></canvas>
         </div>
-        
         <div class="modal-footer">
-            <button id="downloadBtn" class="btn btn-primary">⬇️ Guardar en Archivos</button>
-            <button id="shareBtn" class="btn btn-action">📱 Enviar por WhatsApp / Correo</button>
+            <button id="downloadBtn" class="btn btn-primary">⬇️ Descargar</button>
+            <button id="shareBtn" class="btn btn-action">📱 Enviar</button>
         </div>
     </div>
 
     <script>
-        // Referencias del DOM
-        const fileInput = document.getElementById('fileInput');
-        const externalPdfInput = document.getElementById('externalPdfInput');
-        const previewGallery = document.getElementById('previewGallery');
-        const previewBtn = document.getElementById('previewBtn');
-        const qualitySelect = document.getElementById('qualitySelect');
-        const formatSelect = document.getElementById('formatSelect');
-        const fileNameInput = document.getElementById('fileNameInput');
-        const imageCountLabel = document.getElementById('imageCount');
-        const loadingOverlay = document.getElementById('loadingOverlay');
+        const fileInput = document.getElementById('fileInput'), previewGallery = document.getElementById('previewGallery'), previewBtn = document.getElementById('previewBtn'), qualitySelect = document.getElementById('qualitySelect'), formatSelect = document.getElementById('formatSelect'), fileNameInput = document.getElementById('fileNameInput'), imageCountLabel = document.getElementById('imageCount'), loadingOverlay = document.getElementById('loadingOverlay'), pdfModal = document.getElementById('pdfModal'), closeModalBtn = document.getElementById('closeModalBtn'), downloadBtn = document.getElementById('downloadBtn'), shareBtn = document.getElementById('shareBtn'), pdfCanvas = document.getElementById('pdfCanvas'), externalPdfInput = document.getElementById('externalPdfInput');
         
-        const pdfModal = document.getElementById('pdfModal');
-        const closeModalBtn = document.getElementById('closeModalBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const shareBtn = document.getElementById('shareBtn');
-        const pdfCanvas = document.getElementById('pdfCanvas');
-        const pageInfoText = document.getElementById('pageInfoText');
-        const modalTitle = document.getElementById('modalTitle');
+        let selectedImages = [], currentPdfBlob = null;
 
-        let selectedImages = [];
-        let currentPdfBlob = null; 
-
-        // 1. Lógica de Escáner de Fotos
         fileInput.addEventListener('change', (e) => {
-            const files = Array.from(e.target.files);
-            files.forEach(file => { if (file.type.startsWith('image/')) selectedImages.push(file); });
-            updateGallery();
-            fileInput.value = ''; 
+            Array.from(e.target.files).forEach(f => { if (f.type.startsWith('image/')) selectedImages.push(f); });
+            updateGallery(); fileInput.value = ''; 
         });
 
         function updateGallery() {
@@ -188,89 +147,59 @@
                 reader.onload = (e) => {
                     const card = document.createElement('div');
                     card.className = 'image-card';
-                    card.innerHTML = `<img src="${e.target.result}"><button class="remove-btn" onclick="removeImage(${index})">X</button>`;
+                    card.innerHTML = `
+                        <div class="image-number">${index + 1}</div>
+                        <img src="${e.target.result}">
+                        <button class="remove-btn" onclick="removeImage(${index})">X</button>
+                        <div class="reorder-btns">
+                            <button class="btn-move" onclick="moveImage(${index}, -1)">◀</button>
+                            <button class="btn-move" onclick="moveImage(${index}, 1)">▶</button>
+                        </div>
+                    `;
                     previewGallery.appendChild(card);
                 };
                 reader.readAsDataURL(file);
             });
         }
 
-        window.removeImage = function(index) { selectedImages.splice(index, 1); updateGallery(); };
+        window.removeImage = (index) => { selectedImages.splice(index, 1); updateGallery(); };
+        window.moveImage = (index, dir) => {
+            const next = index + dir;
+            if (next >= 0 && next < selectedImages.length) {
+                [selectedImages[index], selectedImages[next]] = [selectedImages[next], selectedImages[index]];
+                updateGallery();
+            }
+        };
 
-        // 2. Generar PDF desde las fotos
         previewBtn.addEventListener('click', async () => {
-            if (selectedImages.length === 0) return;
             loadingOverlay.classList.remove('hidden');
-            
             try {
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: formatSelect.value });
-                
-                let maxWidth = qualitySelect.value === 'low' ? 800 : qualitySelect.value === 'medium' ? 1200 : 1800;
-                let compression = qualitySelect.value === 'low' ? 0.5 : qualitySelect.value === 'medium' ? 0.7 : 0.9;
-
+                let mw = qualitySelect.value === 'low' ? 800 : qualitySelect.value === 'medium' ? 1200 : 1800;
+                let q = qualitySelect.value === 'low' ? 0.5 : qualitySelect.value === 'medium' ? 0.7 : 0.9;
                 for (let i = 0; i < selectedImages.length; i++) {
-                    const optimizedBase64 = await compressImage(selectedImages[i], maxWidth, compression);
+                    const b64 = await compress(selectedImages[i], mw, q);
                     if (i > 0) pdf.addPage(formatSelect.value, 'portrait');
-                    pdf.addImage(optimizedBase64, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+                    pdf.addImage(b64, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
                 }
-
                 currentPdfBlob = pdf.output('blob');
-                modalTitle.textContent = "Vista Previa de Escáner";
-                await renderPdfToCanvas(currentPdfBlob);
-                
-            } catch (error) {
-                alert("Error al generar PDF."); console.error(error);
-            } finally {
-                loadingOverlay.classList.add('hidden');
-            }
+                renderPdf(currentPdfBlob);
+            } catch (e) { alert("Error"); } finally { loadingOverlay.classList.add('hidden'); }
         });
 
-        // 3. Abrir PDF Externo (El Visor)
-        externalPdfInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (file && file.type === 'application/pdf') {
-                loadingOverlay.classList.remove('hidden');
-                fileNameInput.value = file.name.replace('.pdf', '');
-                currentPdfBlob = file;
-                modalTitle.textContent = "Visor de Documentos";
-                
-                await renderPdfToCanvas(file);
-                loadingOverlay.classList.add('hidden');
-                externalPdfInput.value = ''; 
-            } else if (file) {
-                alert('Formato incorrecto. Por favor selecciona un PDF.');
-            }
-        });
-
-        // 4. Motor de Renderizado (pdf.js)
-        async function renderPdfToCanvas(fileOrBlob) {
-            try {
-                const arrayBuffer = await fileOrBlob.arrayBuffer();
-                const pdfDoc = await pdfjsLib.getDocument(arrayBuffer).promise;
-                
-                pageInfoText.textContent = `Mostrando Página 1 de ${pdfDoc.numPages}`;
-                
-                const page = await pdfDoc.getPage(1);
-                // Escala adaptable para celulares
-                const viewport = page.getViewport({ scale: window.innerWidth > 600 ? 1.5 : 1.0 });
-                const ctx = pdfCanvas.getContext('2d');
-                
-                pdfCanvas.height = viewport.height;
-                pdfCanvas.width = viewport.width;
-
-                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-                pdfModal.classList.remove('hidden');
-
-            } catch (error) {
-                console.error("Error de renderizado:", error);
-                alert("Hubo un problema al procesar la vista del documento, pero aún puedes descargarlo.");
-            }
+        async function renderPdf(blob) {
+            const pdf = await pdfjsLib.getDocument(await blob.arrayBuffer()).promise;
+            const page = await pdf.getPage(1);
+            const vp = page.getViewport({ scale: 1.0 });
+            const ctx = pdfCanvas.getContext('2d');
+            pdfCanvas.height = vp.height; pdfCanvas.width = vp.width;
+            await page.render({ canvasContext: ctx, viewport: vp }).promise;
+            pdfModal.classList.remove('hidden');
         }
 
-        // 5. Utilidades y Controles del Modal
-        function compressImage(file, maxWidth, quality) {
-            return new Promise((resolve, reject) => {
+        function compress(file, mw, q) {
+            return new Promise(res => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = e => {
@@ -278,47 +207,18 @@
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         let w = img.width, h = img.height;
-                        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+                        if (w > mw) { h *= mw/w; w = mw; }
                         canvas.width = w; canvas.height = h;
                         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                        resolve(canvas.toDataURL('image/jpeg', quality));
+                        res(canvas.toDataURL('image/jpeg', q));
                     };
-                    img.onerror = reject;
                 };
-                reader.onerror = reject;
             });
         }
 
-        closeModalBtn.addEventListener('click', () => pdfModal.classList.add('hidden'));
-
-        function getFileName() {
-            let name = fileNameInput.value.trim() || 'Reporte_Escaneado';
-            return name.endsWith('.pdf') ? name : `${name}.pdf`;
-        }
-
-        downloadBtn.addEventListener('click', () => {
-            if (!currentPdfBlob) return;
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(currentPdfBlob);
-            link.download = getFileName();
-            link.click();
-        });
-
-        shareBtn.addEventListener('click', async () => {
-            if (!currentPdfBlob) return;
-            const file = new File([currentPdfBlob], getFileName(), { type: 'application/pdf' });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try { await navigator.share({ files: [file], title: getFileName() }); } 
-                catch (error) { console.log('Envío cancelado'); }
-            } else {
-                alert('Usa el botón de Guardar y compártelo manualmente desde tus archivos.');
-            }
-        });
-        
-        // PWA Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-        }
+        closeModalBtn.onclick = () => pdfModal.classList.add('hidden');
+        downloadBtn.onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(currentPdfBlob); a.download = fileNameInput.value + ".pdf"; a.click(); };
+        shareBtn.onclick = async () => { const f = new File([currentPdfBlob], fileNameInput.value + ".pdf", { type: 'application/pdf' }); if(navigator.canShare) await navigator.share({files:[f]}); };
     </script>
 </body>
 </html>
