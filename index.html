@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AeroDoc Scanner - QC Tool</title>
-    <link rel="manifest" href="manifest.json">
-    
+    <title>AeroDoc Scanner - QC Tool v2</title>
+    <!-- Solo necesitamos jsPDF para generar, eliminamos pdf.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
     
     <style>
         :root {
@@ -16,53 +13,93 @@
             --secondary-color: #34495e;
             --accent-color: #27ae60;
             --action-color: #2980b9;
-            --viewer-bg: #525659;
             --bg-color: #f5f6fa;
             --text-color: #333;
+            --ine-color: #e67e22; /* Color para sección INE */
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); }
+        body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 2rem; }
 
-        .header { background-color: var(--primary-color); color: white; padding: 1.5rem; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-        .control-panel { background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+        .header { background-color: var(--primary-color); color: white; padding: 1rem; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .header h1 { font-size: 1.5rem; }
+        .container { max-width: 800px; margin: 1rem auto; padding: 0 1rem; }
         
-        .row-group { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-        .form-group { flex: 1; min-width: 200px; }
-        .form-group label { display: block; font-weight: bold; margin-bottom: 0.5rem; }
-        select, input[type="text"] { width: 100%; padding: 0.8rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        .control-panel, .ine-panel { background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .ine-panel { border: 2px solid var(--ine-color); }
+        .panel-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem; color: var(--primary-color); display: flex; align-items: center; gap: 8px;}
+        .ine-panel .panel-title { color: var(--ine-color); }
 
-        .action-buttons { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .row-group { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 140px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 0.25rem; font-size: 0.9rem; }
+        select, input[type="text"] { width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+
+        .action-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
         
-        .btn { flex: 1; padding: 1rem; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; text-align: center; min-width: 150px; color: white; }
+        .btn { flex: 1; padding: 0.8rem; border: none; border-radius: 4px; font-size: 0.9rem; font-weight: bold; cursor: pointer; text-align: center; min-width: 120px; color: white; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; gap: 5px;}
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
         .btn-primary { background-color: var(--accent-color); }
         .btn-secondary { background-color: var(--secondary-color); }
-        .btn-action { background-color: var(--action-color); }
-        .btn-purple { background-color: #8e44ad; }
+        .btn-ine { background-color: var(--ine-color); }
 
-        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        /* Estilos de la Galería Corregidos para flujo ordenado */
+        .gallery { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Tamaño fijo para grid */
+            gap: 10px; 
+            margin-top: 1rem; 
+        }
         
-        /* Estilos de la tarjeta con numeración y flechas */
-        .image-card { position: relative; border-radius: 6px; overflow: hidden; aspect-ratio: 1; border: 2px solid #ddd; }
-        .image-card img { width: 100%; height: 100%; object-fit: cover; }
-        .image-number { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; font-weight: bold; }
-        .remove-btn { position: absolute; top: 5px; right: 5px; background: rgba(231, 76, 60, 0.9); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; }
-        .reorder-btns { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; background: rgba(0,0,0,0.5); }
-        .btn-move { background: none; border: none; color: white; padding: 5px; cursor: pointer; font-size: 1.2rem; }
+        .image-card { 
+            position: relative; 
+            border-radius: 6px; 
+            overflow: hidden; 
+            aspect-ratio: 3/4; /* Proporción vertical tipo hoja */
+            border: 2px solid #ddd; 
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .image-card img { max-width: 100%; max-height: 100%; object-fit: contain; } /* Asegura ver la foto completa */
+        
+        .image-number { position: absolute; top: 3px; left: 3px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; z-index: 10; }
+        .remove-btn { position: absolute; top: 3px; right: 3px; background: rgba(231, 76, 60, 0.9); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold; z-index: 10; font-size: 0.8rem;}
+        .reorder-btns { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; background: rgba(0,0,0,0.6); padding: 2px; z-index: 10;}
+        .btn-move { background: none; border: none; color: white; padding: 2px 6px; cursor: pointer; font-size: 1rem; }
 
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; }
+        .preview-section h3 { font-size: 1.1rem; margin-top: 1.5rem; color: var(--primary-color); }
+
+        /* Overlays y Modales */
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; color: white; text-align: center; padding: 20px;}
         .hidden { display: none !important; }
-        .spinner { border: 5px solid #f3f3f3; border-top: 5px solid var(--accent-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 1rem; }
+        .spinner { border: 5px solid #f3f3f3; border-top: 5px solid var(--accent-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 1rem; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; flex-direction: column; }
-        .modal-header { padding: 1rem; background: var(--primary-color); color: white; display: flex; justify-content: space-between; align-items: center; }
-        .close-modal { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
-        .pdf-viewer-container { flex: 1; background: var(--viewer-bg); overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 1rem; }
-        #pdfCanvas { max-width: 100%; background: white; box-shadow: 0 4px 8px rgba(0,0,0,0.3); margin-bottom: 1rem; }
-        .page-info { color: white; margin-bottom: 10px; font-weight: bold; }
-        .modal-footer { padding: 1rem; background: #f1f1f1; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+        /* Estilos específicos para el Modal de Recorte de INE */
+        #cropperModal { overflow-y: auto; }
+        .cropper-container { max-width: 90%; max-height: 70vh; overflow: hidden; position: relative; border: 2px solid white; background: #333; margin-top: 10px; margin-bottom: 10px;}
+        #cropperImage { max-width: 100%; display: block; }
+        
+        /* Marco de recorte visual simple (CSS) */
+        .crop-outline {
+            position: absolute;
+            top: 10%; left: 10%; width: 80%; height: 80%;
+            border: 2px dashed #f1c40f;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); /* Sombra externa */
+            pointer-events: none; /* No interfiere con toques */
+            box-sizing: border-box;
+        }
+        .crop-outline::after {
+            content: "Encuadra el documento aquí";
+            position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%);
+            color: #f1c40f; font-size: 0.8rem; white-space: nowrap; font-weight: bold;
+        }
+        
+        #ineStatus { font-weight: bold; margin-bottom: 10px; color: #f1c40f;}
+
     </style>
 </head>
 <body>
@@ -71,6 +108,8 @@
     </header>
 
     <main class="container">
+        
+        <!-- PANEL DE CONTROL PRINCIPAL -->
         <section class="control-panel">
             <div class="row-group">
                 <div class="form-group" style="flex: 100%;">
@@ -78,7 +117,7 @@
                     <input type="text" id="fileNameInput" value="Reporte_Escaneado">
                 </div>
                 <div class="form-group">
-                    <label>Tamaño:</label>
+                    <label>Tamaño Hoja:</label>
                     <select id="formatSelect">
                         <option value="letter" selected>Carta (Letter)</option>
                         <option value="legal">Oficio (Legal)</option>
@@ -88,137 +127,520 @@
                 <div class="form-group">
                     <label>Calidad:</label>
                     <select id="qualitySelect">
-                        <option value="low">Bajo</option>
+                        <option value="low">Bajo (Rápido)</option>
                         <option value="medium" selected>Medio</option>
-                        <option value="high">Alto</option>
+                        <option value="high">Alto (Lento)</option>
                     </select>
                 </div>
             </div>
 
             <div class="action-buttons">
-                <label for="fileInput" class="btn btn-secondary">📷 Escanear Fotos</label>
+                <!-- Botón de fotos normales -->
+                <label for="fileInput" class="btn btn-secondary">📷 Escanear Documentos</label>
                 <input type="file" id="fileInput" accept="image/*" multiple hidden>
-                <label for="externalPdfInput" class="btn btn-purple">📂 Abrir PDF</label>
-                <input type="file" id="externalPdfInput" accept="application/pdf" hidden>
             </div>
-            <button id="previewBtn" class="btn btn-primary" disabled style="width:100%">📄 Generar y Ver PDF</button>
         </section>
 
+        <!-- NUEVO PANEL ESPECÍFICO PARA INE -->
+        <section class="ine-panel">
+            <div class="panel-title">💳 Modo Identificación (INE 2 Lados)</div>
+            <p style="font-size: 0.85rem; margin-bottom: 1rem; color: #666;">Toma fotos sobre fondo blanco. Se unirá frente y vuelta en una sola hoja.</p>
+            <div class="action-buttons">
+                <button id="ineFrontBtn" class="btn btn-ine">📸 Paso 1: Foto Frente</button>
+                <button id="ineBackBtn" class="btn btn-ine" disabled>📸 Paso 2: Foto Vuelta</button>
+                <!-- Input oculto para cámara INE -->
+                <input type="file" id="ineFileInput" accept="image/*" capture="environment" hidden>
+            </div>
+        </section>
+        
+        <!-- BOTÓN GENERAR FINAL -->
+        <button id="generatePdfBtn" class="btn btn-primary" disabled style="width:100%; margin-top: 1rem; font-size: 1.1rem; padding: 1rem;">📄 Generar y Descargar PDF</button>
+
+        <!-- SECCIÓN DE VISTA PREVIA (GALERÍA) -->
         <section class="preview-section">
-            <h3>Evidencias (<span id="imageCount">0</span>)</h3>
-            <div id="previewGallery" class="gallery"></div>
+            <h3>Páginas del Documento (<span id="imageCount">0</span>)</h3>
+            <div id="previewGallery" class="gallery">
+                <!-- Las imágenes se insertarán aquí secuencialmente -->
+            </div>
         </section>
     </main>
 
-    <div id="loadingOverlay" class="overlay hidden"><div class="spinner"></div><p>Procesando...</p></div>
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay" class="overlay hidden">
+        <div class="spinner"></div>
+        <p id="loadingText">Procesando...</p>
+    </div>
 
-    <div id="pdfModal" class="modal hidden">
-        <div class="modal-header">
-            <h2 id="modalTitle">Vista Previa</h2>
-            <button class="close-modal" id="closeModalBtn">✖</button>
+    <!-- MODAL DE RECORTE (Simulado simple para INE) -->
+    <div id="cropperModal" class="overlay hidden">
+        <div class="panel-title" style="color: white">✂️ Recortar Documento</div>
+        <p id="ineStatus"></p>
+        
+        <div class="cropper-container">
+            <img id="cropperImage" src="" alt="Para recortar">
+            <div class="crop-outline"></div> <!-- Marco visual -->
         </div>
-        <div class="pdf-viewer-container">
-            <div class="page-info" id="pageInfoText">Documento listo</div>
-            <canvas id="pdfCanvas"></canvas>
-        </div>
-        <div class="modal-footer">
-            <button id="downloadBtn" class="btn btn-primary">⬇️ Descargar</button>
-            <button id="shareBtn" class="btn btn-action">📱 Enviar</button>
+
+        <p style="font-size: 0.8rem; color: #ccc; max-width: 80%; margin-bottom: 1rem;">Mueve y haz zoom a la foto con tus dedos para que la INE quede dentro del marco amarillo. Solo se guardará lo que esté dentro.</p>
+        
+        <div class="action-buttons" style="width: 90%; max-width: 400px;">
+            <button id="cancelCropBtn" class="btn btn-secondary">❌ Cancelar</button>
+            <button id="saveCropBtn" class="btn btn-primary">✅ Guardar Corte</button>
         </div>
     </div>
 
     <script>
-        const fileInput = document.getElementById('fileInput'), previewGallery = document.getElementById('previewGallery'), previewBtn = document.getElementById('previewBtn'), qualitySelect = document.getElementById('qualitySelect'), formatSelect = document.getElementById('formatSelect'), fileNameInput = document.getElementById('fileNameInput'), imageCountLabel = document.getElementById('imageCount'), loadingOverlay = document.getElementById('loadingOverlay'), pdfModal = document.getElementById('pdfModal'), closeModalBtn = document.getElementById('closeModalBtn'), downloadBtn = document.getElementById('downloadBtn'), shareBtn = document.getElementById('shareBtn'), pdfCanvas = document.getElementById('pdfCanvas'), externalPdfInput = document.getElementById('externalPdfInput');
+        // --- Variables Globales ---
+        // Array principal que guarda las imágenes finales (objetos {file: Blob/File, type: 'normal'|'ine'})
+        let selectedDocuments = []; 
         
-        let selectedImages = [], currentPdfBlob = null;
+        // Variables temporales para el proceso INE
+        let tempIneFront = null;
+        let ineProcessingSide = null; // 'front' o 'back'
 
-        fileInput.addEventListener('change', (e) => {
-            Array.from(e.target.files).forEach(f => { if (f.type.startsWith('image/')) selectedImages.push(f); });
-            updateGallery(); fileInput.value = ''; 
+        // --- Referencias HTML ---
+        const ui = {
+            fileInput: document.getElementById('fileInput'),
+            previewGallery: document.getElementById('previewGallery'),
+            generatePdfBtn: document.getElementById('generatePdfBtn'),
+            qualitySelect: document.getElementById('qualitySelect'),
+            formatSelect: document.getElementById('formatSelect'),
+            fileNameInput: document.getElementById('fileNameInput'),
+            imageCountLabel: document.getElementById('imageCount'),
+            loading: document.getElementById('loadingOverlay'),
+            loadingText: document.getElementById('loadingText'),
+            // INE
+            ineFileInput: document.getElementById('ineFileInput'),
+            ineFrontBtn: document.getElementById('ineFrontBtn'),
+            ineBackBtn: document.getElementById('ineBackBtn'),
+            // Cropper
+            cropModal: document.getElementById('cropperModal'),
+            cropImg: document.getElementById('cropperImage'),
+            cropStatus: document.getElementById('ineStatus'),
+            cancelCrop: document.getElementById('cancelCropBtn'),
+            saveCrop: document.getElementById('saveCropBtn')
+        };
+
+        // ====== 1. GESTIÓN DE LA GALERÍA (ORDEN 1, 2, 3...) ======
+
+        // Evento para input de fotos normales
+        ui.fileInput.addEventListener('change', (e) => {
+            handleNormalFiles(e.target.files);
+            ui.fileInput.value = ''; // Reset input
         });
 
-        function updateGallery() {
-            previewGallery.innerHTML = '';
-            imageCountLabel.textContent = selectedImages.length;
-            previewBtn.disabled = selectedImages.length === 0;
+        function handleNormalFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    // Agregamos al final del array principal
+                    selectedDocuments.push({
+                        file: file,
+                        type: 'normal',
+                        id: Date.now() + Math.random() // ID único para manejo en DOM
+                    });
+                }
+            });
+            renderGallery();
+        }
 
-            selectedImages.forEach((file, index) => {
+        // Función crucial: Renderiza la galería en el orden exacto del array
+        function renderGallery() {
+            ui.previewGallery.innerHTML = ''; // Limpiar todo
+            const total = selectedDocuments.length;
+            ui.imageCountLabel.textContent = total;
+            ui.generatePdfBtn.disabled = total === 0;
+
+            // Iteramos el array secuencialmente (index 0, 1, 2...)
+            selectedDocuments.forEach((doc, index) => {
+                const pageNumber = index + 1;
+                
+                // Crear contenedor de tarjeta (Grid Item)
+                const card = document.createElement('div');
+                card.className = 'image-card';
+                card.dataset.id = doc.id;
+
+                // Número de página (1, 2, 3...)
+                const numBadge = document.createElement('div');
+                numBadge.className = 'image-number';
+                numBadge.textContent = pageNumber;
+                card.appendChild(numBadge);
+
+                // Botón borrar
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-btn';
+                removeBtn.textContent = 'X';
+                removeBtn.onclick = () => removeDocument(index);
+                card.appendChild(removeBtn);
+
+                // Imagen (usamos FileReader para vista previa)
+                const img = document.createElement('img');
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    const card = document.createElement('div');
-                    card.className = 'image-card';
-                    card.innerHTML = `
-                        <div class="image-number">${index + 1}</div>
-                        <img src="${e.target.result}">
-                        <button class="remove-btn" onclick="removeImage(${index})">X</button>
-                        <div class="reorder-btns">
-                            <button class="btn-move" onclick="moveImage(${index}, -1)">◀</button>
-                            <button class="btn-move" onclick="moveImage(${index}, 1)">▶</button>
-                        </div>
-                    `;
-                    previewGallery.appendChild(card);
-                };
-                reader.readAsDataURL(file);
+                reader.onload = (e) => img.src = e.target.result;
+                reader.readAsDataURL(doc.file); // Lee el Blob/File
+                card.appendChild(img);
+                
+                // Indica si es tipo INE
+                if(doc.type === 'ine') {
+                    card.style.borderColor = 'var(--ine-color)';
+                }
+
+                // Botones de reordenamiento en la parte inferior
+                const reorderDiv = document.createElement('div');
+                reorderDiv.className = 'reorder-btns';
+                
+                const moveLeft = document.createElement('button');
+                moveLeft.className = 'btn-move';
+                moveLeft.textContent = '◀';
+                moveLeft.onclick = () => moveDocument(index, -1);
+                
+                const moveRight = document.createElement('button');
+                moveRight.className = 'btn-move';
+                moveRight.textContent = '▶';
+                moveRight.onclick = () => moveDocument(index, 1);
+
+                // Deshabilitar flechas en los extremos
+                if (index === 0) moveLeft.style.visibility = 'hidden';
+                if (index === total - 1) moveRight.style.visibility = 'hidden';
+
+                reorderDiv.appendChild(moveLeft);
+                reorderDiv.appendChild(moveRight);
+                card.appendChild(reorderDiv);
+
+                // Insertar en la galería (el navegador se encarga del orden visual por el flujo HTML/Grid)
+                ui.previewGallery.appendChild(card);
             });
         }
 
-        window.removeImage = (index) => { selectedImages.splice(index, 1); updateGallery(); };
-        window.moveImage = (index, dir) => {
-            const next = index + dir;
-            if (next >= 0 && next < selectedImages.length) {
-                [selectedImages[index], selectedImages[next]] = [selectedImages[next], selectedImages[index]];
-                updateGallery();
-            }
-        };
-
-        previewBtn.addEventListener('click', async () => {
-            loadingOverlay.classList.remove('hidden');
-            try {
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: formatSelect.value });
-                let mw = qualitySelect.value === 'low' ? 800 : qualitySelect.value === 'medium' ? 1200 : 1800;
-                let q = qualitySelect.value === 'low' ? 0.5 : qualitySelect.value === 'medium' ? 0.7 : 0.9;
-                for (let i = 0; i < selectedImages.length; i++) {
-                    const b64 = await compress(selectedImages[i], mw, q);
-                    if (i > 0) pdf.addPage(formatSelect.value, 'portrait');
-                    pdf.addImage(b64, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-                }
-                currentPdfBlob = pdf.output('blob');
-                renderPdf(currentPdfBlob);
-            } catch (e) { alert("Error"); } finally { loadingOverlay.classList.add('hidden'); }
-        });
-
-        async function renderPdf(blob) {
-            const pdf = await pdfjsLib.getDocument(await blob.arrayBuffer()).promise;
-            const page = await pdf.getPage(1);
-            const vp = page.getViewport({ scale: 1.0 });
-            const ctx = pdfCanvas.getContext('2d');
-            pdfCanvas.height = vp.height; pdfCanvas.width = vp.width;
-            await page.render({ canvasContext: ctx, viewport: vp }).promise;
-            pdfModal.classList.remove('hidden');
+        // Funciones de utilidad para la galería
+        function removeDocument(index) {
+            selectedDocuments.splice(index, 1);
+            renderGallery();
         }
 
-        function compress(file, mw, q) {
-            return new Promise(res => {
+        function moveDocument(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < selectedDocuments.length) {
+                // Intercambiar elementos en el array
+                [selectedDocuments[index], selectedDocuments[newIndex]] = [selectedDocuments[newIndex], selectedDocuments[index]];
+                renderGallery();
+            }
+        }
+
+
+        // ====== 2. MODO IDENTIFICACIÓN (INE) ======
+
+        // Eventos botones INE
+        ui.ineFrontBtn.addEventListener('click', () => {
+            ineProcessingSide = 'front';
+            ui.cropStatus.textContent = "PASO 1: Captura el FRENTE";
+            ui.ineFileInput.click(); // Abre cámara
+        });
+
+        ui.ineBackBtn.addEventListener('click', () => {
+            ineProcessingSide = 'back';
+            ui.cropStatus.textContent = "PASO 2: Captura la VUELTA";
+            ui.ineFileInput.click(); // Abre cámara
+        });
+
+        // Captura de archivo de cámara INE
+        ui.ineFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            showCropper(file);
+            ui.ineFileInput.value = ''; // Reset
+        });
+
+        // Lógica del "Recortador" simulado
+        // Nota: Para un recorte real preciso táctil, se necesitaría una librería como Cropper.js.
+        // Aquí simulamos capturando lo que el usuario encuadra visualmente usando object-fit y canvas.
+        
+        function showCropper(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                ui.cropImg.src = e.target.result;
+                ui.cropModal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden'; // Evita scroll fondo
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function closeCropper() {
+            ui.cropModal.classList.add('hidden');
+            ui.cropImg.src = '';
+            document.body.style.overflow = '';
+        }
+
+        ui.cancelCrop.addEventListener('click', closeCropper);
+
+        ui.saveCrop.addEventListener('click', async () => {
+            showLoading("Recortando documento...");
+            
+            try {
+                // Obtenemos la imagen recortada del canvas basado en el encuadre actual
+                const croppedBlob = await getCroppedImageBlob();
+                
+                closeCropper();
+
+                if (ineProcessingSide === 'front') {
+                    tempIneFront = croppedBlob;
+                    ui.ineFrontBtn.classList.remove('btn-ine');
+                    ui.ineFrontBtn.classList.add('btn-secondary');
+                    ui.ineFrontBtn.textContent = "✅ Frente Capturado";
+                    ui.ineBackBtn.disabled = false; // Habilita paso 2
+                    alert("Frente guardado. Ahora toma la foto de la parte trasera (vuelta).");
+                } else {
+                    // Es la vuelta, procedemos a unir
+                    showLoading("Uniendo frente y vuelta en una hoja...");
+                    const finalInePageBlob = await combineIneImages(tempIneFront, croppedBlob);
+                    
+                    // Agregamos la hoja final al array global
+                    selectedDocuments.push({
+                        file: finalInePageBlob,
+                        type: 'ine',
+                        id: Date.now() + Math.random()
+                    });
+                    
+                    renderGallery();
+                    resetInePanel();
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error al procesar el recorte.");
+            } finally {
+                hideLoading();
+            }
+        });
+
+        function resetInePanel() {
+            tempIneFront = null;
+            ineProcessingSide = null;
+            ui.ineFrontBtn.classList.add('btn-ine');
+            ui.ineFrontBtn.classList.remove('btn-secondary');
+            ui.ineFrontBtn.textContent = "📸 Paso 1: Foto Frente";
+            ui.ineBackBtn.disabled = true;
+        }
+
+        /**
+         * Simula el recorte tomando lo que está visible en el area img basada en CSS object-fit contain
+         * y dibujándolo en un canvas con proporciones fijas de tarjeta (aprox 85x54mm).
+         */
+        function getCroppedImageBlob() {
+            return new Promise((resolve, reject) => {
+                const img = ui.cropImg;
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Proporciones estándar INE (ID-1): 85.6 × 53.98 mm -> Ratio ~1.58
+                const targetRatio = 85.6 / 53.98;
+                
+                // Definimos un tamaño de renderizado alto para buena calidad
+                canvas.width = 1600; 
+                canvas.height = canvas.width / targetRatio; 
+
+                // Lógica compleja para determinar qué parte de la imagen original está en el centro
+                // considerando 'object-fit: contain'.
+                const imgRatio = img.naturalWidth / img.naturalHeight;
+                
+                let sourceX, sourceY, sourceWidth, sourceHeight;
+
+                // Esto asume que el usuario centró bien el documento en el marco amarillo.
+                // Tomamos una porción central de la foto original con el ratio de la INE.
+                if (imgRatio > targetRatio) {
+                    // La foto es más ancha que el objetivo
+                    sourceHeight = img.naturalHeight * 0.8; // Tomamos el 80% central alto
+                    sourceWidth = sourceHeight * targetRatio;
+                    sourceY = img.naturalHeight * 0.1;
+                    sourceX = (img.naturalWidth - sourceWidth) / 2;
+                } else {
+                    // La foto es más alta que el objetivo
+                    sourceWidth = img.naturalWidth * 0.8; // Tomamos el 80% central ancho
+                    sourceHeight = sourceWidth / targetRatio;
+                    sourceX = img.naturalWidth * 0.1;
+                    sourceY = (img.naturalHeight - sourceHeight) / 2;
+                }
+
+                // Dibujar en canvas
+                ctx.fillStyle = "white"; // Fondo blanco por seguridad
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
+
+                // Convertir a Blob (JPEG calidad 0.9)
+                canvas.toBlob((blob) => {
+                    if (blob) resolve(blob);
+                    else reject("Error generando canvas");
+                }, 'image/jpeg', 0.9);
+            });
+        }
+
+        /**
+         * Toma los dos blobs recortados (frente y vuelta, ya con mismo ratio)
+         * y los dibuja en un canvas tamaño HOJA (portrait) centrados.
+         */
+        async function combineIneImages(frontBlob, backBlob) {
+            // Cargar imágenes en objetos Image
+            const imgFront = await blobToImage(frontBlob);
+            const imgBack = await blobToImage(backBlob);
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Definimos tamaño canvas tipo HOJA CARTA a 300 DPI aprox para impresión
+            // Carta: 8.5x11 pulgadas -> 2550 x 3300 pixeles
+            canvas.width = 2550;
+            canvas.height = 3300;
+
+            // Fondo blanco de la hoja
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Calcular tamaños y posiciones
+            // Queremos que las INEs ocupen aprox el 70% del ancho de la hoja
+            const ineRenderWidth = canvas.width * 0.7;
+            const ineRenderHeight = ineRenderWidth / (imgFront.width / imgFront.height); // Mantiene proporción
+            const posX = (canvas.width - ineRenderWidth) / 2; // Centrado horizontal
+
+            // Posiciones verticales (frente arriba, vuelta abajo, con separación)
+            const gap = canvas.height * 0.05; // 5% de separación
+            const totalHeightBoth = (ineRenderHeight * 2) + gap;
+            const startY = (canvas.height - totalHeightBoth) / 2; // Centrado bloque vertical
+            const posY_Front = startY;
+            const posY_Back = startY + ineRenderHeight + gap;
+
+            // Dibujar Frente
+            ctx.drawImage(imgFront, posX, posY_Front, ineRenderWidth, ineRenderHeight);
+            
+            // Dibujar Vuelta
+            ctx.drawImage(imgBack, posX, posY_Back, ineRenderWidth, ineRenderHeight);
+
+            // Opcional: Borde muy fino gris a las INEs para delimitar si el fondo es muy blanco
+            ctx.strokeStyle = "#ccc";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(posX, posY_Front, ineRenderWidth, ineRenderHeight);
+            ctx.strokeRect(posX, posY_Back, ineRenderWidth, ineRenderHeight);
+
+            // Retornar Blob de la hoja completa
+            return new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.85));
+        }
+
+        // Utilidad: Convierte Blob a objeto Image cargado
+        function blobToImage(blob) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.src = URL.createObjectURL(blob);
+            });
+        }
+
+
+        // ====== 3. GENERACIÓN DE PDF FINAL ======
+
+        ui.generatePdfBtn.addEventListener('click', generatePDF);
+
+        async function generatePDF() {
+            if (selectedDocuments.length === 0) return;
+            
+            showLoading("Generando PDF de alta calidad...");
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const format = ui.formatSelect.value;
+                const quality = ui.qualitySelect.value;
+                
+                // Configuraciones de compresión según calidad seleccionada
+                const config = {
+                    low: { maxW: 1000, q: 0.6 },
+                    medium: { maxW: 1600, q: 0.8 },
+                    high: { maxW: 2400, q: 0.95 }
+                }[quality];
+
+                // Crear PDF (portrait, mm)
+                const pdf = new jsPDF({ 
+                    orientation: 'portrait', 
+                    unit: 'mm', 
+                    format: format,
+                    compress: quality !== 'high' // Compresión interna de jsPDF activa en low/medium
+                });
+                
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+
+                // Procesar cada documento del array en ORDEN
+                for (let i = 0; i < selectedDocuments.length; i++) {
+                    ui.loadingText.textContent = `Procesando página ${i+1} de ${selectedDocuments.length}...`;
+                    
+                    const doc = selectedDocuments[i];
+                    
+                    // 1. Comprimir y obtener Base64
+                    const imgDataUrl = await compressImage(doc.file, config.maxW, config.q);
+                    
+                    // 2. Agregar página si no es la primera
+                    if (i > 0) {
+                        pdf.addPage(format, 'portrait');
+                    }
+                    
+                    // 3. Añadir imagen ocupando toda la hoja (0, 0 es top-left)
+                    // Usamos 'FAST' para alias si no es calidad alta
+                    const alias = quality === 'high' ? 'SLOW' : 'FAST';
+                    pdf.addImage(imgDataUrl, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, alias);
+                }
+
+                // Descargar
+                const fileName = ui.fileNameInput.value.replace(/[^a-z0-9]/gi, '_') + ".pdf";
+                pdf.save(fileName);
+
+            } catch (error) {
+                console.error(error);
+                alert("Ocurrió un error al generar el PDF.");
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Utilidad: Comprime imagen usando Canvas y devuelve DataURL
+        function compressImage(file, maxWidth, quality) {
+            return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = e => {
-                    const img = new Image(); img.src = e.target.result;
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        let w = img.width, h = img.height;
-                        if (w > mw) { h *= mw/w; w = mw; }
-                        canvas.width = w; canvas.height = h;
-                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                        res(canvas.toDataURL('image/jpeg', q));
+                        let width = img.width;
+                        let height = img.height;
+
+                        // Redimensionar si es más ancha que el máximo
+                        if (width > maxWidth) {
+                            height = height * (maxWidth / width);
+                            width = maxWidth;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Fondo blanco (para PNGs transparentes cargados)
+                        ctx.fillStyle = "white";
+                        ctx.fillRect(0, 0, width, height);
+                        
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Obtener Base64 como JPEG comprimido
+                        resolve(canvas.toDataURL('image/jpeg', quality));
                     };
                 };
             });
         }
 
-        closeModalBtn.onclick = () => pdfModal.classList.add('hidden');
-        downloadBtn.onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(currentPdfBlob); a.download = fileNameInput.value + ".pdf"; a.click(); };
-        shareBtn.onclick = async () => { const f = new File([currentPdfBlob], fileNameInput.value + ".pdf", { type: 'application/pdf' }); if(navigator.canShare) await navigator.share({files:[f]}); };
+        // --- Utilidades UI ---
+        function showLoading(text) {
+            ui.loadingText.textContent = text;
+            ui.loading.classList.remove('hidden');
+        }
+        function hideLoading() {
+            ui.loading.classList.add('hidden');
+        }
+
     </script>
 </body>
 </html>
