@@ -278,41 +278,39 @@
  // LÓGICA DE TAMAÑO DINÁMICO (Versión que funcionaba + igualador de tamaño)
         // LÓGICA DE TAMAÑO ORIGINAL ESTRICTO (Cero reescalado)
         async function combineIneImages(frontBlob, backBlob) {
-            const imgFront = await blobToImage(frontBlob);
-            const imgBack = await blobToImage(backBlob);
+    const imgFront = await blobToImage(frontBlob);
+    const imgBack = await blobToImage(backBlob);
 
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+    // Tomamos el ancho mayor para igualar ambas imágenes
+    const maxImgWidth = Math.max(imgFront.width, imgBack.width);
 
-            // Lienzo exacto tamaño Carta a 300 DPI (8.5 x 11 pulgadas)
-            // Esto equivale a un escaneo profesional en hoja completa.
-            canvas.width = 2550;
-            canvas.height = 3300;
+    // Calculamos el alto proporcional de cada imagen para que no se deformen
+    const wFront = maxImgWidth;
+    const hFront = imgFront.height * (maxImgWidth / imgFront.width);
 
-            ctx.fillStyle = "white";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const wBack = maxImgWidth;
+    const hBack = imgBack.height * (maxImgWidth / imgBack.width);
 
-            // RESPETO ABSOLUTO A TUS MEDIDAS: Se usan los pixeles reales de tu archivo.
-            // Cero multiplicadores, cero divisiones, cero escalas.
-            const wFront = imgFront.width;
-            const hFront = imgFront.height;
-            const wBack = imgBack.width;
-            const hBack = imgBack.height;
+    // Definimos un margen dinámico (5% del ancho)
+    const margin = maxImgWidth * 0.05; 
 
-            // Frente: Centrado a lo ancho. Posición vertical: 1 pulgada desde arriba (300 pixeles)
-            const posXFront = (canvas.width - wFront) / 2;
-            const posYFront = 300;
+    const canvas = document.createElement('canvas');
+    // El canvas ahora "abraza" exactamente a las dos imágenes, sin sobrar espacio
+    canvas.width = maxImgWidth + (margin * 2);
+    canvas.height = hFront + hBack + (margin * 3); 
 
-            // Vuelta: Centrado a lo ancho. Posición vertical: Mitad exacta de la hoja + 1 pulgada
-            const posXBack = (canvas.width - wBack) / 2;
-            const posYBack = (canvas.height / 2) + 300;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Dibuja tus fotos exactamente como vienen de tu archivo
-            ctx.drawImage(imgFront, posXFront, posYFront, wFront, hFront);
-            ctx.drawImage(imgBack, posXBack, posYBack, wBack, hBack);
+    // Posicionamos el Frente arriba
+    ctx.drawImage(imgFront, margin, margin, wFront, hFront);
 
-            return new Promise(res => canvas.toBlob(res, 'image/jpeg', 1.0));
-        }
+    // Posicionamos el Reverso exactamente debajo del frente + un margen
+    ctx.drawImage(imgBack, margin, hFront + (margin * 2), wBack, hBack);
+
+    return new Promise(res => canvas.toBlob(res, 'image/jpeg', 1.0));
+}
         function blobToImage(blob) {
             return new Promise((resolve) => {
                 const img = new Image();
