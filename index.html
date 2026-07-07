@@ -275,39 +275,33 @@
 
         // LÓGICA DE TAMAÑO DINÁMICO (No reduce las imágenes)
    // LÓGICA DE TAMAÑO DINÁMICO (Ajustada para no cortar la imagen superior)
-        async function combineIneImages(frontBlob, backBlob) {
+  async function combineIneImages(frontBlob, backBlob) {
             const imgFront = await blobToImage(frontBlob);
             const imgBack = await blobToImage(backBlob);
 
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
-            // Tomamos el ancho de la imagen más grande para que no sobre espacio
-            const maxImgWidth = Math.max(imgFront.width, imgBack.width);
-            
-            // Calculamos el alto para la hoja completa
-            canvas.width = maxImgWidth;
-            canvas.height = maxImgWidth * (11 / 8.5);
+            // Definimos un tamaño de lienzo fijo lo suficientemente grande para cualquier INE
+            // 2550 x 3300 es el tamaño de una hoja carta a 300 DPI
+            canvas.width = 2550;
+            canvas.height = 3300;
 
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Mantenemos el tamaño 100% original de tus fotos
-            let wFront = imgFront.width;
-            let hFront = imgFront.height;
-            let wBack = imgBack.width;
-            let hBack = imgBack.height;
+            // Dibujamos el frente exactamente al tamaño de la foto (imgFront.width/height)
+            // Centrado horizontalmente en la mitad superior
+            const posXFront = (canvas.width - imgFront.width) / 2;
+            const posYFront = (canvas.height / 4) - (imgFront.height / 2); 
 
-            // Frente: Centrado horizontal, pero fijamos la posición vertical cerca del tope
-            const posXFront = (canvas.width - wFront) / 2;
-            const posYFront = 100; // Un margen fijo de 100px desde arriba para asegurar que no se corte
+            // Dibujamos la vuelta exactamente al tamaño de la foto (imgBack.width/height)
+            // Centrado horizontalmente en la mitad inferior
+            const posXBack = (canvas.width - imgBack.width) / 2;
+            const posYBack = (canvas.height * 0.75) - (imgBack.height / 2);
 
-            // Reverso: Centrado horizontal, fijado en la mitad de abajo
-            const posXBack = (canvas.width - wBack) / 2;
-            const posYBack = (canvas.height / 2) + 100; // Mismo margen de 100px desde la mitad
-
-            ctx.drawImage(imgFront, posXFront, posYFront, wFront, hFront);
-            ctx.drawImage(imgBack, posXBack, posYBack, wBack, hBack);
+            ctx.drawImage(imgFront, posXFront, posYFront, imgFront.width, imgFront.height);
+            ctx.drawImage(imgBack, posXBack, posYBack, imgBack.width, imgBack.height);
 
             return new Promise(res => canvas.toBlob(res, 'image/jpeg', 1.0));
         }
