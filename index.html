@@ -274,6 +274,7 @@
         });
 
         // LÓGICA DE TAMAÑO DINÁMICO (No reduce las imágenes)
+   // LÓGICA DE TAMAÑO DINÁMICO (Ajustada para no cortar la imagen superior)
         async function combineIneImages(frontBlob, backBlob) {
             const imgFront = await blobToImage(frontBlob);
             const imgBack = await blobToImage(backBlob);
@@ -281,11 +282,10 @@
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
-            // Tomamos el ancho de la imagen MÁS GRANDE que subiste. 
-            // Así el lienzo se adapta a tu imagen y jamás la hace pequeña.
+            // Tomamos el ancho de la imagen más grande para que no sobre espacio
             const maxImgWidth = Math.max(imgFront.width, imgBack.width);
             
-            // Calculamos el alto para mantener la proporción de una hoja estándar (8.5 x 11)
+            // Calculamos el alto para la hoja completa
             canvas.width = maxImgWidth;
             canvas.height = maxImgWidth * (11 / 8.5);
 
@@ -298,18 +298,17 @@
             let wBack = imgBack.width;
             let hBack = imgBack.height;
 
-            // Frente: Centrado exactamente en la mitad superior
+            // Frente: Centrado horizontal, pero fijamos la posición vertical cerca del tope
             const posXFront = (canvas.width - wFront) / 2;
-            const posYFront = (canvas.height / 2 - hFront) / 2;
+            const posYFront = 100; // Un margen fijo de 100px desde arriba para asegurar que no se corte
 
-            // Reverso: Centrado exactamente en la mitad inferior
+            // Reverso: Centrado horizontal, fijado en la mitad de abajo
             const posXBack = (canvas.width - wBack) / 2;
-            const posYBack = (canvas.height / 2) + (canvas.height / 2 - hBack) / 2;
+            const posYBack = (canvas.height / 2) + 100; // Mismo margen de 100px desde la mitad
 
             ctx.drawImage(imgFront, posXFront, posYFront, wFront, hFront);
             ctx.drawImage(imgBack, posXBack, posYBack, wBack, hBack);
 
-            // Exportar sin pérdida de calidad (1.0 = máxima)
             return new Promise(res => canvas.toBlob(res, 'image/jpeg', 1.0));
         }
 
