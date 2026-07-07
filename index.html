@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AeroDoc Scanner - QC Tool v4</title>
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js](https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js)"></script>
+    <!-- Corrección 1: Enlace limpio para que funcione la librería jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
         :root {
@@ -272,7 +273,7 @@
             ui.ineFileInput.value = ''; 
         });
 
-        // LÓGICA PRINCIPAL: Corta visualmente la hoja en 2 mitades manteniendo tamaño original
+        // Corrección 2: LÓGICA PRINCIPAL: Escala la credencial para un tamaño adecuado de lectura
         async function combineIneImages(frontBlob, backBlob) {
             const imgFront = await blobToImage(frontBlob);
             const imgBack = await blobToImage(backBlob);
@@ -280,43 +281,39 @@
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
-            // Tamaño Hoja Carta estándar a 300DPI (2550 x 3300 pixeles)
+            // Tamaño Hoja Carta estándar a 300DPI
             canvas.width = 2550;
             canvas.height = 3300;
 
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            let wFront = imgFront.width;
-            let hFront = imgFront.height;
-            let wBack = imgBack.width;
-            let hBack = imgBack.height;
+            // Queremos que la credencial ocupe el 70% del ancho de la hoja para que se lea bien
+            const targetWidth = canvas.width * 0.70;
 
-            // Seguridad: Solo reducimos si la foto es gigantesca y se saldría de su mitad de la hoja
-            const maxWidth = canvas.width * 0.9;
-            const maxHeight = (canvas.height / 2) * 0.9;
+            // Escalar frente
+            const scaleFront = targetWidth / imgFront.width;
+            const wFront = targetWidth;
+            const hFront = imgFront.height * scaleFront;
 
-            if (wFront > maxWidth || hFront > maxHeight) {
-                const scale = Math.min(maxWidth / wFront, maxHeight / hFront);
-                wFront *= scale; hFront *= scale;
-            }
-            if (wBack > maxWidth || hBack > maxHeight) {
-                const scale = Math.min(maxWidth / wBack, maxHeight / hBack);
-                wBack *= scale; hBack *= scale;
-            }
+            // Escalar vuelta
+            const scaleBack = targetWidth / imgBack.width;
+            const wBack = targetWidth;
+            const hBack = imgBack.height * scaleBack;
 
-            // Mitad de arriba (calcula el centro de la parte superior del canvas)
+            // Mitad de arriba (centrado)
             const posXFront = (canvas.width - wFront) / 2;
             const posYFront = (canvas.height / 2 - hFront) / 2;
 
-            // Mitad de abajo (calcula el centro de la parte inferior del canvas)
+            // Mitad de abajo (centrado)
             const posXBack = (canvas.width - wBack) / 2;
             const posYBack = (canvas.height / 2) + (canvas.height / 2 - hBack) / 2;
 
             ctx.drawImage(imgFront, posXFront, posYFront, wFront, hFront);
             ctx.drawImage(imgBack, posXBack, posYBack, wBack, hBack);
 
-            return new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.85));
+            // Subimos la calidad del render del INE a 0.95 para no perder legibilidad
+            return new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.95));
         }
 
         function blobToImage(blob) {
@@ -327,7 +324,7 @@
             });
         }
 
-        // 3. GENERACIÓN DEL PDF (Sin Cambios)
+        // Corrección 3: GENERACIÓN DEL PDF (Ajuste de proporciones de imagen)
         ui.generatePdfBtn.addEventListener('click', async () => {
             if (selectedDocuments.length === 0) return;
             showLoading("Generando PDF de alta calidad...");
@@ -354,8 +351,29 @@
                     const imgDataUrl = await compressImage(doc.file, config.maxW, config.q);
                     if (i > 0) pdf.addPage(format, 'portrait');
                     
+                    // --- CORRECCIÓN DE PROPORCIONES ---
+                    const imgProps = pdf.getImageProperties(imgDataUrl);
+                    const pdfRatio = pageWidth / pageHeight;
+                    const imgRatio = imgProps.width / imgProps.height;
+
+                    let finalWidth = pageWidth;
+                    let finalHeight = pageHeight;
+                    let x = 0;
+                    let y = 0;
+
+                    // Ajustar la imagen sin deformarla
+                    if (imgRatio > pdfRatio) {
+                        finalWidth = pageWidth;
+                        finalHeight = (pageWidth / imgProps.width) * imgProps.height;
+                        y = (pageHeight - finalHeight) / 2; // Centrar verticalmente
+                    } else {
+                        finalHeight = pageHeight;
+                        finalWidth = (pageHeight / imgProps.height) * imgProps.width;
+                        x = (pageWidth - finalWidth) / 2; // Centrar horizontalmente
+                    }
+
                     const alias = quality === 'high' ? 'SLOW' : 'FAST';
-                    pdf.addImage(imgDataUrl, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, alias);
+                    pdf.addImage(imgDataUrl, 'JPEG', x, y, finalWidth, finalHeight, undefined, alias);
                 }
 
                 const fileName = ui.fileNameInput.value.replace(/[^a-z0-9]/gi, '_') + ".pdf";
