@@ -276,6 +276,7 @@
         // LÓGICA DE TAMAÑO DINÁMICO (No reduce las imágenes)
    // LÓGICA DE TAMAÑO DINÁMICO (Ajustada para no cortar la imagen superior)
  // LÓGICA DE TAMAÑO DINÁMICO (Versión que funcionaba + igualador de tamaño)
+        // LÓGICA DE TAMAÑO ORIGINAL ESTRICTO (Cero reescalado)
         async function combineIneImages(frontBlob, backBlob) {
             const imgFront = await blobToImage(frontBlob);
             const imgBack = await blobToImage(backBlob);
@@ -283,41 +284,35 @@
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
-            // Volvemos a la lógica anterior: El lienzo crece según la foto más grande
-            const maxImgWidth = Math.max(imgFront.width, imgBack.width);
-            
-            // Le damos un 10% extra de ancho para tener márgenes a los lados
-            canvas.width = maxImgWidth * 1.1;
-            canvas.height = canvas.width * (11 / 8.5); // Proporción exacta de hoja carta
+            // Lienzo exacto tamaño Carta a 300 DPI (8.5 x 11 pulgadas)
+            // Esto equivale a un escaneo profesional en hoja completa.
+            canvas.width = 2550;
+            canvas.height = 3300;
 
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // AQUÍ ESTÁ LA SOLUCIÓN: Igualamos el ancho de AMBAS fotos.
-            // Así, si la segunda foto tenía menos píxeles, quedará de tamaño idéntico a la primera.
-            const wFront = maxImgWidth;
-            const hFront = imgFront.height * (maxImgWidth / imgFront.width);
+            // RESPETO ABSOLUTO A TUS MEDIDAS: Se usan los pixeles reales de tu archivo.
+            // Cero multiplicadores, cero divisiones, cero escalas.
+            const wFront = imgFront.width;
+            const hFront = imgFront.height;
+            const wBack = imgBack.width;
+            const hBack = imgBack.height;
 
-            const wBack = maxImgWidth;
-            const hBack = imgBack.height * (maxImgWidth / imgBack.width);
-
-            // Un margen del 3% para asegurar que nunca se corten arriba
-            const topMargin = canvas.height * 0.03; 
-
-            // Frente: Centrada a lo ancho y con margen seguro arriba
+            // Frente: Centrado a lo ancho. Posición vertical: 1 pulgada desde arriba (300 pixeles)
             const posXFront = (canvas.width - wFront) / 2;
-            const posYFront = topMargin; 
+            const posYFront = 300;
 
-            // Reverso: Centrada a lo ancho, justo en su mitad con el mismo margen
+            // Vuelta: Centrado a lo ancho. Posición vertical: Mitad exacta de la hoja + 1 pulgada
             const posXBack = (canvas.width - wBack) / 2;
-            const posYBack = (canvas.height / 2) + topMargin;
+            const posYBack = (canvas.height / 2) + 300;
 
+            // Dibuja tus fotos exactamente como vienen de tu archivo
             ctx.drawImage(imgFront, posXFront, posYFront, wFront, hFront);
             ctx.drawImage(imgBack, posXBack, posYBack, wBack, hBack);
 
             return new Promise(res => canvas.toBlob(res, 'image/jpeg', 1.0));
         }
-
         function blobToImage(blob) {
             return new Promise((resolve) => {
                 const img = new Image();
