@@ -277,37 +277,37 @@
    // LÓGICA DE TAMAÑO DINÁMICO (Ajustada para no cortar la imagen superior)
  // LÓGICA DE TAMAÑO DINÁMICO (Versión que funcionaba + igualador de tamaño)
         // LÓGICA DE TAMAÑO ORIGINAL ESTRICTO (Cero reescalado)
-        async function combineIneImages(frontBlob, backBlob) {
+       async function combineIneImages(frontBlob, backBlob) {
     const imgFront = await blobToImage(frontBlob);
     const imgBack = await blobToImage(backBlob);
 
-    // Tomamos el ancho mayor para igualar ambas imágenes
-    const maxImgWidth = Math.max(imgFront.width, imgBack.width);
-
-    // Calculamos el alto proporcional de cada imagen para que no se deformen
-    const wFront = maxImgWidth;
-    const hFront = imgFront.height * (maxImgWidth / imgFront.width);
-
-    const wBack = maxImgWidth;
-    const hBack = imgBack.height * (maxImgWidth / imgBack.width);
-
-    // Definimos un margen dinámico (5% del ancho)
-    const margin = maxImgWidth * 0.05; 
-
+    // 1. Creamos el canvas con el tamaño EXACTO de la primera imagen original
+    // Así el PDF respetará las medidas que ya trae tu escáner.
     const canvas = document.createElement('canvas');
-    // El canvas ahora "abraza" exactamente a las dos imágenes, sin sobrar espacio
-    canvas.width = maxImgWidth + (margin * 2);
-    canvas.height = hFront + hBack + (margin * 3); 
-
+    canvas.width = imgFront.width;
+    canvas.height = imgFront.height;
+    
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Posicionamos el Frente arriba
-    ctx.drawImage(imgFront, margin, margin, wFront, hFront);
+    // 2. FRENTE: Cortamos la mitad superior de la primera imagen
+    // y la ponemos en la mitad superior del documento final
+    const halfHeightFront = imgFront.height / 2;
+    ctx.drawImage(
+        imgFront,
+        0, 0, imgFront.width, halfHeightFront, // Origen: Cortar solo la mitad de arriba
+        0, 0, canvas.width, canvas.height / 2  // Destino: Pegar en la mitad de arriba del lienzo
+    );
 
-    // Posicionamos el Reverso exactamente debajo del frente + un margen
-    ctx.drawImage(imgBack, margin, hFront + (margin * 2), wBack, hBack);
+    // 3. REVERSO: Cortamos la mitad superior de la segunda imagen (donde está el reverso)
+    // y la ponemos en la mitad INFERIOR del documento final
+    const halfHeightBack = imgBack.height / 2;
+    ctx.drawImage(
+        imgBack,
+        0, 0, imgBack.width, halfHeightBack,   // Origen: Cortar solo la mitad de arriba
+        0, canvas.height / 2, canvas.width, canvas.height / 2 // Destino: Pegar en la mitad de abajo del lienzo
+    );
 
     return new Promise(res => canvas.toBlob(res, 'image/jpeg', 1.0));
 }
